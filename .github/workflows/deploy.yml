@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Descargar código
+      - name: Checkout código
         uses: actions/checkout@v4
 
       - name: Configurar Java 17
@@ -19,32 +19,27 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Dar permisos Maven
+      - name: Permisos Maven
         run: chmod +x mvnw
 
       - name: Compilar proyecto
         run: ./mvnw clean package -DskipTests
-
-      - name: Crear archivo PEM
-        run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" > private_key.pem
-          chmod 400 private_key.pem
 
       - name: Copiar JAR a EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
-          key_path: private_key.pem
+          key: ${{ secrets.EC2_SSH_KEY }}
           source: "target/ms-guias-despacho-0.0.1-SNAPSHOT.jar"
           target: "/home/ec2-user/"
 
-      - name: Deploy en EC2
+      - name: Deploy aplicación
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
-          key_path: private_key.pem
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             pkill -f ms-guias-despacho || true
             export TNS_ADMIN=/home/ec2-user/Wallet_DSY2206
