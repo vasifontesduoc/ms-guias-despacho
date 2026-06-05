@@ -31,3 +31,15 @@ build/
 
 ### VS Code ###
 .vscode/
+
+target/
+*.class
+*.log
+
+.idea/
+.vscode/
+
+Wallet_DSY2206/
+*.pem
+
+application.properties
