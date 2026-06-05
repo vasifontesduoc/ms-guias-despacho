@@ -19,28 +19,33 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Dar permisos a Maven
+      - name: Dar permisos Maven
         run: chmod +x mvnw
 
       - name: Compilar proyecto
         run: ./mvnw clean package -DskipTests
+
+      - name: Crear archivo PEM
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
 
       - name: Copiar JAR a EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key_path: private_key.pem
           source: "target/ms-guias-despacho-0.0.1-SNAPSHOT.jar"
           target: "/home/ec2-user/"
 
-      - name: Desplegar aplicación en EC2
+      - name: Deploy en EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key_path: private_key.pem
           script: |
             pkill -f ms-guias-despacho || true
             export TNS_ADMIN=/home/ec2-user/Wallet_DSY2206
-            nohup java -jar /home/ec2-user/target/ms-guias-despacho-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
+            nohup java -jar /home/ec2-user/ms-guias-despacho-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
