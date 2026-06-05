@@ -20,30 +20,50 @@ steps:
       distribution: 'temurin'
       java-version: '17'
 
-  - name: Dar permisos a Maven
-    run: chmod +x mvnw
+ name: Deploy Spring Boot to EC2
 
-  - name: Compilar proyecto
-    run: ./mvnw clean package -DskipTests
+on:
+  push:
+    branches:
+      - main
 
-  - name: Copiar JAR a EC2
-    uses: appleboy/scp-action@v0.1.7
-    with:
-      host: ${{ secrets.EC2_HOST }}
-      username: ec2-user
-      key: ${{ secrets.EC2_SSH_KEY }}
-      source: "target/ms-guias-despacho-0.0.1-SNAPSHOT.jar"
-      target: "/home/ec2-user/"
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-  - name: Desplegar aplicación en EC2
-    uses: appleboy/ssh-action@v1.0.3
-    with:
-      host: ${{ secrets.EC2_HOST }}
-      username: ec2-user
-      key: ${{ secrets.EC2_SSH_KEY }}
-      script: |
-        pkill -f ms-guias-despacho || true
-        export TNS_ADMIN=/home/ec2-user/Wallet_DSY2206
-        nohup java -jar /home/ec2-user/target/ms-guias-despacho-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
-```
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Dar permisos a Maven
+        run: chmod +x mvnw
+
+      - name: Compilar proyecto
+        run: ./mvnw clean package -DskipTests
+
+      - name: Copiar JAR a EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "target/ms-guias-despacho-0.0.1-SNAPSHOT.jar"
+          target: "/home/ec2-user/"
+
+      - name: Desplegar aplicación en EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            pkill -f ms-guias-despacho || true
+            export TNS_ADMIN=/home/ec2-user/Wallet_DSY2206
+            nohup java -jar /home/ec2-user/target/ms-guias-despacho-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
 
