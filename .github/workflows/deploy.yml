@@ -41,6 +41,9 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            pkill -f ms-guias-despacho || true
-            export TNS_ADMIN=/home/ec2-user/Wallet_DSY2206
-            nohup java -jar /home/ec2-user/target/ms-guias-despacho-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
+  	killall java || true
+  	export TNS_ADMIN=/home/ec2-user/Wallet_DSY2206
+  	cd /home/ec2-user
+  	nohup java -jar target/ms-guias-despacho-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
+  	sleep 10
+  	cat app.log
