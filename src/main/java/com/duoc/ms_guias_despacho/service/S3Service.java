@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 
 import java.util.List;
 
@@ -72,14 +73,22 @@ public class S3Service {
 
     public List<String> listarArchivos() {
 
-        ListObjectsV2Request request = ListObjectsV2Request.builder()
-                .bucket(bucketName)
-                .build();
+        try {
 
-        return s3Client.listObjectsV2(request)
-                .contents()
-                .stream()
-                .map(S3Object::key)
-                .toList();
+            ListObjectsV2Request request = ListObjectsV2Request.builder()
+                    .bucket(bucketName)
+                    .build();
+
+            ListObjectsV2Response response = s3Client.listObjectsV2(request);
+
+            return response.contents()
+                    .stream()
+                    .map(S3Object::key)
+                    .toList();
+
+        } catch (Exception e) {
+
+            throw new RuntimeException("Error al listar archivos de S3");
+        }
     }
 }
