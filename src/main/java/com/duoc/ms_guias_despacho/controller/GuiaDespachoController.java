@@ -16,7 +16,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
-
 import java.time.LocalDate;
 import java.util.List;
 
@@ -96,10 +95,12 @@ public class GuiaDespachoController {
         service.eliminarGuia(id);
     }
 
+    @Operation(summary = "Subir archivo a S3")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public String subirArchivo(
-            @RequestPart("archivo") MultipartFile archivo) {
+    public ResponseEntity<String> subirArchivo(
+            @RequestParam("archivo") MultipartFile archivo) {
 
-        return s3Service.subirArchivo(archivo);
+        return ResponseEntity.ok(
+                s3Service.subirArchivo(archivo));
     }
 }
