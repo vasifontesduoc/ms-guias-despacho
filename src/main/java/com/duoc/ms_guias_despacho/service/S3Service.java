@@ -3,30 +3,53 @@ package com.duoc.ms_guias_despacho.service;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
+
 import java.util.List;
 
 @Service
 public class S3Service {
 
-    private final String rutaEfs = "/app/efs/";
+    private final String bucketName = "ms-guias-despacho";
+
+    private final S3Client s3Client = S3Client.builder()
+            .region(Region.US_EAST_1)
+            .credentialsProvider(DefaultCredentialsProvider.create())
+            .build();
 
     public String subirArchivo(MultipartFile archivo) {
 
         try {
 
-            Path rutaArchivo = Paths.get(rutaEfs + archivo.getOriginalFilename());
+            String nombreArchivo = archivo.getOriginalFilename();
 
-            Files.write(rutaArchivo, archivo.getBytes());
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key("guias/" + nombreArchivo)
+                    .contentType(archivo.getContentType())
+                    .build();
 
-            return "Archivo guardado en EFS correctamente";
+            s3Client.putObject(
+                    putObjectRequest,
+                    RequestBody.fromBytes(archivo.getBytes()));
+
+            return "Archivo subido correctamente: " + nombreArchivo;
 
         } catch (Exception e) {
 
-            throw new RuntimeException("Error al guardar archivo");
+            e.printStackTrace();
+
+            throw new RuntimeException(
+                    "Error al subir archivo a S3: " + e.getMessage());
         }
     }
 
@@ -34,28 +57,47 @@ public class S3Service {
 
         try {
 
-            Path rutaArchivo = Paths.get(rutaEfs + nombreArchivo);
+            GetObjectRequest request = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(nombreArchivo)
+                    .build();
 
-            return Files.readAllBytes(rutaArchivo);
+            ResponseInputStream<GetObjectResponse> response =
+                    s3Client.getObject(request);
+
+            return response.readAllBytes();
 
         } catch (Exception e) {
 
-            throw new RuntimeException("Error al descargar archivo");
+            e.printStackTrace();
+
+            throw new RuntimeException(
+                    "Error al descargar archivo desde S3: "
+                            + e.getMessage());
         }
     }
 
     public List<String> listarArchivos() {
 
-        File carpeta = new File(rutaEfs);
+        try {
 
-        File[] archivos = carpeta.listFiles();
+            ListObjectsV2Request request = ListObjectsV2Request.builder()
+                    .bucket(bucketName)
+                    .build();
 
-        if (archivos == null) {
-            return List.of();
+            return s3Client.listObjectsV2(request)
+                    .contents()
+                    .stream()
+                    .map(S3Object::key)
+                    .toList();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            throw new RuntimeException(
+                    "Error al listar archivos S3: "
+                            + e.getMessage());
         }
-
-        return java.util.Arrays.stream(archivos)
-                .map(File::getName)
-                .toList();
     }
 }
