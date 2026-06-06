@@ -12,6 +12,10 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.S3Object;
+
+import java.util.List;
 
 @Service
 public class S3Service {
@@ -64,5 +68,18 @@ public class S3Service {
 
             throw new RuntimeException("Error al descargar archivo desde S3");
         }
+    }
+
+    public List<String> listarArchivos() {
+
+        ListObjectsV2Request request = ListObjectsV2Request.builder()
+                .bucket(bucketName)
+                .build();
+
+        return s3Client.listObjectsV2(request)
+                .contents()
+                .stream()
+                .map(S3Object::key)
+                .toList();
     }
 }

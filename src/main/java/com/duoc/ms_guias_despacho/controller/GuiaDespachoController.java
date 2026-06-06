@@ -81,6 +81,13 @@ public class GuiaDespachoController {
                 .body(archivo);
     }
 
+    @Operation(summary = "Listar archivos del bucket S3")
+    @GetMapping("/archivos")
+    public List<String> listarArchivos() {
+
+        return s3Service.listarArchivos();
+    }
+
     @Operation(summary = "Eliminar una guía")
     @DeleteMapping("/{id}")
     public void eliminarGuia(@PathVariable Long id) {
