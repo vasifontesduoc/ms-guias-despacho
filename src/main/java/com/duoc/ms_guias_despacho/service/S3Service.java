@@ -16,6 +16,10 @@ import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import java.util.List;
 
 @Service
@@ -34,9 +38,17 @@ public class S3Service {
 
             String nombreArchivo = archivo.getOriginalFilename();
 
+            // Guardar temporalmente en EFS
+            Path rutaEfs = Paths.get("/home/ec2-user/efs/" + nombreArchivo);
+
+            Files.write(rutaEfs, archivo.getBytes());
+
+            // Guardar organizado en S3
+            String key = "guias/" + nombreArchivo;
+
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
-                    .key(nombreArchivo)
+                    .key(key)
                     .contentType(archivo.getContentType())
                     .build();
 
@@ -44,7 +56,7 @@ public class S3Service {
                     putObjectRequest,
                     RequestBody.fromBytes(archivo.getBytes()));
 
-            return "Archivo subido correctamente: " + nombreArchivo;
+            return "Archivo subido correctamente a EFS y S3: " + key;
 
         } catch (Exception e) {
 
