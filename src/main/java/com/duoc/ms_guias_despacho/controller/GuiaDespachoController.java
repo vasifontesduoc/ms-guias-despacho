@@ -12,6 +12,9 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -62,6 +65,20 @@ public class GuiaDespachoController {
             @Valid @RequestBody GuiaRequestDTO request) {
 
         return service.actualizarGuia(id, request);
+    }
+
+    @Operation(summary = "Descargar archivo desde S3")
+    @GetMapping("/download/{nombre}")
+    public ResponseEntity<byte[]> descargarArchivo(
+            @PathVariable String nombre) {
+
+        byte[] archivo = s3Service.descargarArchivo(nombre);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=" + nombre)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(archivo);
     }
 
     @Operation(summary = "Eliminar una guía")

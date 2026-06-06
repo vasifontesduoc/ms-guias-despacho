@@ -9,6 +9,10 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+
 @Service
 public class S3Service {
 
@@ -40,6 +44,25 @@ public class S3Service {
         } catch (Exception e) {
 
             throw new RuntimeException("Error al subir archivo a S3");
+        }
+    }
+
+    public byte[] descargarArchivo(String nombreArchivo) {
+
+        try {
+
+            GetObjectRequest request = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(nombreArchivo)
+                    .build();
+
+            ResponseInputStream<GetObjectResponse> response = s3Client.getObject(request);
+
+            return response.readAllBytes();
+
+        } catch (Exception e) {
+
+            throw new RuntimeException("Error al descargar archivo desde S3");
         }
     }
 }
