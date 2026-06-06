@@ -71,8 +71,7 @@ public class GuiaDespachoController {
         service.eliminarGuia(id);
     }
 
-    @Operation(summary = "Subir archivo a S3")
-    @PostMapping("/upload")
+    @PostMapping(value = "/upload", consumes = "multipart/form-data")
     public String subirArchivo(
             @RequestParam("archivo") MultipartFile archivo) {
 
