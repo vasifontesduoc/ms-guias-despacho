@@ -60,7 +60,9 @@ public class S3Service {
 
         } catch (Exception e) {
 
-            throw new RuntimeException("Error al subir archivo a S3");
+            e.printStackTrace();
+
+            throw new RuntimeException(e.getMessage());
         }
     }
 
