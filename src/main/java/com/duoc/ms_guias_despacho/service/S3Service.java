@@ -3,66 +3,30 @@ package com.duoc.ms_guias_despacho.service;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-
-import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
-import software.amazon.awssdk.services.s3.model.S3Object;
-import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
-
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import java.util.List;
 
 @Service
 public class S3Service {
 
-    private final String bucketName = "ms-guias-despacho";
-
-    private final S3Client s3Client = S3Client.builder()
-            .region(Region.US_EAST_1)
-            .credentialsProvider(DefaultCredentialsProvider.create())
-            .build();
+    private final String rutaEfs = "/app/efs/";
 
     public String subirArchivo(MultipartFile archivo) {
 
         try {
 
-            String nombreArchivo = archivo.getOriginalFilename();
+            Path rutaArchivo = Paths.get(rutaEfs + archivo.getOriginalFilename());
 
-            // Guardar temporalmente en EFS
-            Path rutaEfs = Paths.get("/home/ec2-user/efs/" + nombreArchivo);
+            Files.write(rutaArchivo, archivo.getBytes());
 
-            Files.write(rutaEfs, archivo.getBytes());
-
-            // Guardar organizado en S3
-            String key = "guias/" + nombreArchivo;
-
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(key)
-                    .contentType(archivo.getContentType())
-                    .build();
-
-            s3Client.putObject(
-                    putObjectRequest,
-                    RequestBody.fromBytes(archivo.getBytes()));
-
-            return "Archivo subido correctamente a EFS y S3: " + key;
+            return "Archivo guardado en EFS correctamente";
 
         } catch (Exception e) {
 
-            e.printStackTrace();
-
-            throw new RuntimeException(e.getMessage());
+            throw new RuntimeException("Error al guardar archivo");
         }
     }
 
@@ -70,39 +34,28 @@ public class S3Service {
 
         try {
 
-            GetObjectRequest request = GetObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(nombreArchivo)
-                    .build();
+            Path rutaArchivo = Paths.get(rutaEfs + nombreArchivo);
 
-            ResponseInputStream<GetObjectResponse> response = s3Client.getObject(request);
-
-            return response.readAllBytes();
+            return Files.readAllBytes(rutaArchivo);
 
         } catch (Exception e) {
 
-            throw new RuntimeException("Error al descargar archivo desde S3");
+            throw new RuntimeException("Error al descargar archivo");
         }
     }
 
     public List<String> listarArchivos() {
 
-        try {
+        File carpeta = new File(rutaEfs);
 
-            ListObjectsV2Request request = ListObjectsV2Request.builder()
-                    .bucket(bucketName)
-                    .build();
+        File[] archivos = carpeta.listFiles();
 
-            ListObjectsV2Response response = s3Client.listObjectsV2(request);
-
-            return response.contents()
-                    .stream()
-                    .map(S3Object::key)
-                    .toList();
-
-        } catch (Exception e) {
-
-            throw new RuntimeException("Error al listar archivos de S3");
+        if (archivos == null) {
+            return List.of();
         }
+
+        return java.util.Arrays.stream(archivos)
+                .map(File::getName)
+                .toList();
     }
 }
