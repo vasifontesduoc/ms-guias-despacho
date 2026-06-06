@@ -68,7 +68,7 @@ public class GuiaDespachoController {
     }
 
     @Operation(summary = "Descargar archivo desde S3")
-    @GetMapping("/download/{nombre}")
+    @GetMapping("/download/{nombre:.+}")
     public ResponseEntity<byte[]> descargarArchivo(
             @PathVariable String nombre) {
 
