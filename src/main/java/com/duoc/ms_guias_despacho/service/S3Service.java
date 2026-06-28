@@ -19,85 +19,84 @@ import java.util.List;
 @Service
 public class S3Service {
 
-    private final String bucketName = "ms-guias-despacho";
+        private final String bucketName = "ms-guias-despacho";
 
-    private final S3Client s3Client = S3Client.builder()
-            .region(Region.US_EAST_1)
-            .credentialsProvider(DefaultCredentialsProvider.create())
-            .build();
+        private final S3Client s3Client = S3Client.builder()
+                        .region(Region.US_EAST_1)
+                        .credentialsProvider(DefaultCredentialsProvider.create())
+                        .build();
 
-    public String subirArchivo(MultipartFile archivo) {
+        public String subirArchivo(MultipartFile archivo) {
 
-        try {
+                try {
 
-            String nombreArchivo = archivo.getOriginalFilename();
+                        String nombreArchivo = archivo.getOriginalFilename();
 
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key("guias/" + nombreArchivo)
-                    .contentType(archivo.getContentType())
-                    .build();
+                        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                                        .bucket(bucketName)
+                                        .key("guias/" + nombreArchivo)
+                                        .contentType(archivo.getContentType())
+                                        .build();
 
-            s3Client.putObject(
-                    putObjectRequest,
-                    RequestBody.fromBytes(archivo.getBytes()));
+                        s3Client.putObject(
+                                        putObjectRequest,
+                                        RequestBody.fromBytes(archivo.getBytes()));
 
-            return "Archivo subido correctamente: " + nombreArchivo;
+                        return "Archivo subido correctamente: " + nombreArchivo;
 
-        } catch (Exception e) {
+                } catch (Exception e) {
 
-            e.printStackTrace();
+                        e.printStackTrace();
 
-            throw new RuntimeException(
-                    "Error al subir archivo a S3: " + e.getMessage());
+                        throw new RuntimeException(
+                                        "Error al subir archivo a S3: " + e.getMessage());
+                }
         }
-    }
 
-    public byte[] descargarArchivo(String nombreArchivo) {
+        public byte[] descargarArchivo(String nombreArchivo) {
 
-        try {
+                try {
 
-            GetObjectRequest request = GetObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(nombreArchivo)
-                    .build();
+                        GetObjectRequest request = GetObjectRequest.builder()
+                                        .bucket(bucketName)
+                                        .key("guias/" + nombreArchivo)
+                                        .build();
 
-            ResponseInputStream<GetObjectResponse> response =
-                    s3Client.getObject(request);
+                        ResponseInputStream<GetObjectResponse> response = s3Client.getObject(request);
 
-            return response.readAllBytes();
+                        return response.readAllBytes();
 
-        } catch (Exception e) {
+                } catch (Exception e) {
 
-            e.printStackTrace();
+                        e.printStackTrace();
 
-            throw new RuntimeException(
-                    "Error al descargar archivo desde S3: "
-                            + e.getMessage());
+                        throw new RuntimeException(
+                                        "Error al descargar archivo desde S3: "
+                                                        + e.getMessage());
+                }
         }
-    }
 
-    public List<String> listarArchivos() {
+        public List<String> listarArchivos() {
 
-        try {
+                try {
 
-            ListObjectsV2Request request = ListObjectsV2Request.builder()
-                    .bucket(bucketName)
-                    .build();
+                        ListObjectsV2Request request = ListObjectsV2Request.builder()
+                                        .bucket(bucketName)
+                                        .build();
 
-            return s3Client.listObjectsV2(request)
-                    .contents()
-                    .stream()
-                    .map(S3Object::key)
-                    .toList();
+                        return s3Client.listObjectsV2(request)
+                                        .contents()
+                                        .stream()
+                                        .map(S3Object::key)
+                                        .toList();
 
-        } catch (Exception e) {
+                } catch (Exception e) {
 
-            e.printStackTrace();
+                        e.printStackTrace();
 
-            throw new RuntimeException(
-                    "Error al listar archivos S3: "
-                            + e.getMessage());
+                        throw new RuntimeException(
+                                        "Error al listar archivos S3: "
+                                                        + e.getMessage());
+                }
         }
-    }
 }
