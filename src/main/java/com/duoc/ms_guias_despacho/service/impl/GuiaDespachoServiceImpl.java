@@ -6,6 +6,7 @@ import com.duoc.ms_guias_despacho.entity.GuiaDespacho;
 import com.duoc.ms_guias_despacho.exception.ResourceNotFoundException;
 import com.duoc.ms_guias_despacho.repository.GuiaDespachoRepository;
 import com.duoc.ms_guias_despacho.service.GuiaDespachoService;
+import com.duoc.ms_guias_despacho.producer.RabbitMQProducer;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +21,7 @@ import java.util.UUID;
 public class GuiaDespachoServiceImpl implements GuiaDespachoService {
 
     private final GuiaDespachoRepository repository;
+    private final RabbitMQProducer rabbitMQProducer;
 
     @Override
     public GuiaResponseDTO crearGuia(GuiaRequestDTO request) {
@@ -27,16 +29,16 @@ public class GuiaDespachoServiceImpl implements GuiaDespachoService {
         GuiaDespacho guia = new GuiaDespacho();
 
         guia.setNumeroGuia(UUID.randomUUID().toString());
-
         guia.setTransportista(request.getTransportista());
-
         guia.setDestinatario(request.getDestinatario());
-
         guia.setFecha(LocalDate.now());
-
         guia.setEstado("GENERADA");
 
+        // Guardar en la base de datos
         GuiaDespacho guiaGuardada = repository.save(guia);
+
+        // Enviar a RabbitMQ
+        rabbitMQProducer.enviarMensaje(guiaGuardada);
 
         return convertirDTO(guiaGuardada);
     }
