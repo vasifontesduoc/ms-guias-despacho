@@ -1,5 +1,8 @@
 package com.duoc.ms_guias_despacho.config;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
@@ -14,8 +17,14 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
+    // Cola principal
     public static final String MAIN_QUEUE = "guias-despacho.queue";
     public static final String MAIN_EXCHANGE = "guias-despacho.exchange";
+
+    // Dead Letter Queue
+    public static final String DLQ = "guias-despacho.dlq";
+    public static final String DLX = "guias-despacho.dlx";
+    public static final String DLQ_ROUTING_KEY = "dlq";
 
     @Value("${spring.rabbitmq.host}")
     private String host;
@@ -30,15 +39,15 @@ public class RabbitMQConfig {
     private String password;
 
     @Bean
-    Jackson2JsonMessageConverter messageConverter() {
-
+    public Jackson2JsonMessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
     @Bean
-    CachingConnectionFactory connectionFactory() {
+    public CachingConnectionFactory connectionFactory() {
 
         CachingConnectionFactory factory = new CachingConnectionFactory();
+
         factory.setHost(host);
         factory.setPort(port);
         factory.setUsername(username);
@@ -47,23 +56,64 @@ public class RabbitMQConfig {
         return factory;
     }
 
-    @Bean
-    Queue myQueue() {
+    // ==========================
+    // Cola principal
+    // ==========================
 
-        return new Queue(MAIN_QUEUE, true, false, false, null);
+    @Bean
+    public Queue myQueue() {
+
+        Map<String, Object> args = new HashMap<>();
+
+        args.put("x-dead-letter-exchange", DLX);
+        args.put("x-dead-letter-routing-key", DLQ_ROUTING_KEY);
+
+        return new Queue(MAIN_QUEUE, true, false, false, args);
     }
 
     @Bean
-    DirectExchange myExchange() {
+    public DirectExchange myExchange() {
 
         return new DirectExchange(MAIN_EXCHANGE);
     }
 
     @Bean
-    Binding binding(Queue myQueue, DirectExchange myExchange) {
+    public Binding binding(Queue myQueue, DirectExchange myExchange) {
 
-        return BindingBuilder.bind(myQueue).to(myExchange).with("");
+        return BindingBuilder
+                .bind(myQueue)
+                .to(myExchange)
+                .with("");
     }
+
+    // ==========================
+    // Dead Letter Queue
+    // ==========================
+
+    @Bean
+    public Queue deadLetterQueue() {
+
+        return new Queue(DLQ, true);
+    }
+
+    @Bean
+    public DirectExchange deadLetterExchange() {
+
+        return new DirectExchange(DLX);
+    }
+
+    @Bean
+    public Binding deadLetterBinding() {
+
+        return BindingBuilder
+                .bind(deadLetterQueue())
+                .to(deadLetterExchange())
+                .with(DLQ_ROUTING_KEY);
+    }
+
+    // ==========================
+    // RabbitTemplate
+    // ==========================
 
     @Bean
     public RabbitTemplate rabbitTemplate(
