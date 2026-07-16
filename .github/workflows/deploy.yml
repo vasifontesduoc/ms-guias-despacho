@@ -19,6 +19,15 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Verificar secreto SSH
+        run: |
+          if [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
+            echo "La llave está vacía"
+            exit 1
+          else
+            echo "La llave fue recibida correctamente"
+          fi
+
       - name: Dar permisos Maven
         run: chmod +x mvnw
 
